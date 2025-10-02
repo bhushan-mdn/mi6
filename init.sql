@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS agents (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    port TEXT NOT NULL,
+    status TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS agent_paths (
+    id INTEGER PRIMARY KEY,
+    path TEXT NOT NULL,
+    response TEXT NOT NULL
+);
