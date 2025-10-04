@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"mi6/internal/db"
+	"mi6/web/template"
 )
 
 // --- Request/Response DTOs ---
@@ -73,6 +74,42 @@ func (h *Handlers) CreateAgent(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// func (h *Handlers) StartAgent(w http.ResponseWriter, r *http.Request) {
+// 	agent, ok := r.Context().Value(keyAgent).(*db.Agent)
+// 	if !ok {
+// 		http.Error(w, http.StatusText(422), 422)
+// 		return
+// 	}
+
+// 	if err := h.Mgr.StartAgentServer(r.Context(), agent.Id); err != nil {
+// 		http.Error(w, err.Error(), http.StatusConflict) // Use StatusConflict for "already running"
+// 		return
+// 	}
+
+// 	w.WriteHeader(http.StatusAccepted)
+// 	w.Write([]byte(fmt.Sprintf(`{"message":"Agent %d started on port %s"}`, agent.Id, agent.Port)))
+// }
+
+// func (h *Handlers) StopAgent(w http.ResponseWriter, r *http.Request) {
+// 	agent, ok := r.Context().Value(keyAgent).(*db.Agent)
+// 	if !ok {
+// 		http.Error(w, http.StatusText(422), 422)
+// 		return
+// 	}
+
+// 	if err := h.Mgr.StopAgentServer(agent.Id); err != nil {
+// 		http.Error(w, err.Error(), http.StatusNotFound)
+// 		return
+// 	}
+
+// 	w.WriteHeader(http.StatusOK)
+// 	w.Write([]byte(fmt.Sprintf(`{"message":"Agent %d stopping..."}`, agent.Id)))
+// }
+
+// ... (imports and structs remain the same) ...
+
+// ... (ListAgents, GetAgent, CreateAgent remain JSON) ...
+
 func (h *Handlers) StartAgent(w http.ResponseWriter, r *http.Request) {
 	agent, ok := r.Context().Value(keyAgent).(*db.Agent)
 	if !ok {
@@ -81,12 +118,20 @@ func (h *Handlers) StartAgent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.Mgr.StartAgentServer(r.Context(), agent.Id); err != nil {
-		http.Error(w, err.Error(), http.StatusConflict) // Use StatusConflict for "already running"
+		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
 
-	w.WriteHeader(http.StatusAccepted)
-	w.Write([]byte(fmt.Sprintf(`{"message":"Agent %d started on port %s"}`, agent.Id, agent.Port)))
+    // REFRESH the agent data from DB after starting
+    updatedAgent, err := h.Repo.GetAgentByID(r.Context(), agent.Id)
+    if err != nil {
+        http.Error(w, "Agent started but failed to refresh data.", http.StatusInternalServerError)
+        return
+    }
+
+    // NEW: Render and return the HTML fragment for the single row
+    w.WriteHeader(http.StatusOK)
+    template.AgentRow(updatedAgent).Render(r.Context(), w)
 }
 
 func (h *Handlers) StopAgent(w http.ResponseWriter, r *http.Request) {
@@ -101,6 +146,14 @@ func (h *Handlers) StopAgent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf(`{"message":"Agent %d stopping..."}`, agent.Id)))
+    // REFRESH the agent data from DB after stopping (status will be 'stopped')
+    updatedAgent, err := h.Repo.GetAgentByID(r.Context(), agent.Id)
+    if err != nil {
+        http.Error(w, "Agent stopped but failed to refresh data.", http.StatusInternalServerError)
+        return
+    }
+
+    // NEW: Render and return the HTML fragment for the single row
+    w.WriteHeader(http.StatusOK)
+    template.AgentRow(updatedAgent).Render(r.Context(), w)
 }
