@@ -1,0 +1,67 @@
+//go:generate templ generate
+package template
+
+import "mi6/internal/db"
+
+// AgentTable renders the structure of the agent list (table head and body wrapper).
+templ AgentTable(agents []db.Agent) {
+    <div class="overflow-x-auto">
+        <table class="table w-full">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Port</th>
+                    <th>Status</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                for _, agent := range agents {
+                    @AgentRow(&agent) // Pass the address of agent for consistency
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+// AgentRow renders a single table row. It is the crucial target for HTMX swaps.
+templ AgentRow(agent *db.Agent) {
+    // hx-target="this" and id are CRITICAL for HTMX to swap this exact row
+    <tr id={ fmt.Sprintf("agent-row-%d", agent.Id) }>
+        <td>{ strconv.Itoa(agent.Id) }</td>
+        <td>{ agent.Name }</td>
+        <td>{ agent.Port }</td>
+        <td>
+            // DaisyUI badge for status
+            if agent.Status == "active" {
+                <div class="badge badge-success">Active</div>
+            } else {
+                <div class="badge badge-error">Stopped</div>
+            }
+        </td>
+        <td class="flex justify-center space-x-2">
+            if agent.Status == "stopped" {
+                <button
+                    class="btn btn-sm btn-primary"
+                    hx-post={ fmt.Sprintf("/agents/%d/start", agent.Id) }
+                    hx-target={ fmt.Sprintf("#agent-row-%d", agent.Id) }
+                    hx-swap="outerHTML"
+                >
+                    Start
+                </button>
+            } else {
+                <button
+                    class="btn btn-sm btn-warning"
+
+                    hx-post={ fmt.Sprintf("/agents/%d/stop", agent.Id) }
+
+                    hx-target={ fmt.Sprintf("#agent-row-%d", agent.Id) }
+                    hx-swap="outerHTML"
+                >
+                    Stop
+                </button>
+            }
+        </td>
+    </tr>
+}

@@ -4,10 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
+	"path/filepath"
 	"strconv"
 
 	"mi6/internal/agent"
 	"mi6/internal/db"
+	"mi6/internal/web" // NEW: Import the web handlers
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -22,14 +24,21 @@ const keyAgent AgentContextKey = "agent"
 type Handlers struct {
 	Mgr  *agent.Registry
 	Repo db.AgentRepository
+    Web *web.Handlers // NEW: Web Handlers dependency
 }
 
 // NewRouter sets up the Chi router and API routes.
 func NewRouter(mgr *agent.Registry) http.Handler {
-	// Handlers struct holds the registry and repository dependencies
+	repo := mgr.Repo
+
+	// Instantiate Web Handlers
+	webH := web.NewHandlers(repo)
+
+	// Handlers struct holds all dependencies
 	h := &Handlers{
 		Mgr:  mgr,
-		Repo: mgr.Repo,
+		Repo: repo,
+        Web:  webH,
 	}
 
 	r := chi.NewRouter()
@@ -39,15 +48,22 @@ func NewRouter(mgr *agent.Registry) http.Handler {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	// API routes for agent management
+    // 1. Static Files (CSS/JS)
+    fileServer(r, "/static", http.Dir(filepath.Join("web", "static")))
+
+    // 2. Web UI Routes (Renders HTML pages/fragments)
+    r.Get("/", h.Web.DashboardPage)
+    r.Get("/ui/agents", h.Web.AgentTableFragment) // HTMX endpoint for table updates
+
+	// 3. API Routes (Remain mostly JSON, but Start/Stop return HTML fragments for HTMX)
 	r.Route("/agents", func(r chi.Router) {
 		r.Get("/", h.ListAgents)
 		r.Post("/", h.CreateAgent)
-		// r.Post("/startAll", h.StartAllAgents) // To be implemented later
 
 		r.Route("/{agentID}", func(r chi.Router) {
-			r.Use(h.AgentCtx) // Middleware to load agent by ID
+			r.Use(h.AgentCtx)
 			r.Get("/", h.GetAgent)
+            // THESE NOW RETURN HTML FRAGMENTS
 			r.Post("/start", h.StartAgent)
 			r.Post("/stop", h.StopAgent)
 		})
@@ -56,8 +72,18 @@ func NewRouter(mgr *agent.Registry) http.Handler {
 	return r
 }
 
-// AgentCtx is middleware that loads an Agent by ID and stores it in context.
+// fileServer serves files from the specified folder.
+func fileServer(r chi.Router, path string, root http.FileSystem) {
+	if path != "/" && path[len(path)-1] != '/' {
+		r.Get(path, http.RedirectHandler(path+"/", http.StatusMovedPermanently).ServeHTTP)
+		path += "/"
+	}
+	r.Handle(path+"*", http.StripPrefix(path, http.FileServer(root)))
+}
+
+// AgentCtx remains the same as before
 func (h *Handlers) AgentCtx(next http.Handler) http.Handler {
+    // ... (Your existing AgentCtx logic) ...
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		agentIDStr := chi.URLParam(r, "agentID")
 		agentID, err := strconv.Atoi(agentIDStr)
