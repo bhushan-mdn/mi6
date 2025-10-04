@@ -1,7 +1,11 @@
 //go:generate templ generate
 package template
 
-import "mi6/internal/db"
+import (
+    "fmt"
+    "mi6/internal/db"
+    "strconv"
+)
 
 // AgentTable renders the structure of the agent list (table head and body wrapper).
 templ AgentTable(agents []db.Agent) {
