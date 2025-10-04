@@ -2,6 +2,8 @@
 
 The **MI6 Agent Manager** is a lightweight, self-contained mock server management utility built with Go. It allows developers to configure, start, and stop multiple independent mock HTTP servers (Agents) from a single centralized web interface. It uses **Go**, **SQLite**, **HTMX**, **a-h/templ**, and **Tailwind CSS** for a fast, modern "backend-driven" user experience.
 
+<img width="888" height="452" alt="image" src="https://github.com/user-attachments/assets/f9524917-e81d-4c67-bd72-c4859844f2f3" />
+
 ## 🚀 Features
 
   * **Mock Server Registry:** Centralized management (create, list, manage) of multiple Agents.
