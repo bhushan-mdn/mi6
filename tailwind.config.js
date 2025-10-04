@@ -1,17 +1,13 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    // Watch all Go and templ files for Tailwind classes
-    "./**/*.{go,templ,html}",
+    // Add paths to all your template files (e.g., Go/Templ files, HTML, JS)
+    "./**/*.html",
+    "./**/*.templ",
+    "./**/*.go",
   ],
   theme: {
     extend: {},
   },
-  plugins: [
-    require('daisyui'),
-  ],
-  // DaisyUI configuration
-  daisyui: {
-    themes: ["dark", "light"], // Use a couple of themes
-  },
+  plugins: [],
 }

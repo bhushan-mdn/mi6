@@ -1,0 +1,35 @@
+# Air Configuration File
+
+root = "."
+tmp_dir = "tmp"
+
+[build]
+# Command to run when files change
+cmd = "go build -o ./tmp/runner ./cmd/mi6"
+
+# Run go generate BEFORE building (crucial for templ files)
+args_bin = ["-mod=readonly"]
+full_bin = "go generate ./... && go build -o ./tmp/runner ./cmd/mi6"
+
+# Watch these file extensions
+include_ext = ["go", "templ", "html", "css", "js"]
+
+# Ignore these directories
+exclude_dir = ["tmp", "vendor", "node_modules", "web/static"]
+
+# Stop existing processes before restarting
+stop_cmd = "killall runner"
+
+[log]
+# Watch the log output from the runner
+time = true
+
+[runner]
+# Command to execute the compiled binary
+bin = "./tmp/runner"
+# Pass any flags needed by your main.go here (e.g., the port)
+args = ["-port", "6969"]
+
+[misc]
+# Delete the tmp directory before exiting
+clean_on_exit = true
