@@ -27,6 +27,8 @@
 web/template/*.go
 web/template/components/*.go
 
+web/static/output.css
+
 # ------------------------------------
 # 3. NODE.JS / NPM / TAILWIND CSS
 # ------------------------------------
